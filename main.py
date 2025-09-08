@@ -29,7 +29,30 @@ sys.path.append(str(project_root))
 from text_extraction.DAL_files.trademark_dal import TrademarkExtractor
 from text_extraction.DAL_files.trademark_comparison import TrademarkComparator
 from text_extraction.DAL_files.csv_manager import TrademarkCSVManager
-from visual_comparison.DAL_files.trademark_search import InteractiveTrademarkSearch
+
+# Import visual comparison with error handling
+try:
+    from visual_comparison.DAL_files.trademark_search import InteractiveTrademarkSearch
+    VISUAL_COMPARISON_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Visual comparison not available: {e}")
+    VISUAL_COMPARISON_AVAILABLE = False
+    # Create a mock class for fallback
+    class InteractiveTrademarkSearch:
+        def __init__(self):
+            self.device = "cpu"
+            self.vit_model = None
+            self.efficient_model = None
+            self.text_encoder = None
+            self.ocr_reader = None
+            self.index = None
+            self.metadata = []
+        def process_uploaded_pdfs(self, *args, **kwargs):
+            return []
+        def build_index(self, *args, **kwargs):
+            pass
+        def search_similar(self, *args, **kwargs):
+            return {'matches': [], 'scores': [], 'error': 'Visual comparison not available'}
 
 # Configure Streamlit page
 st.set_page_config(
@@ -470,6 +493,21 @@ def show_visual_comparison_ui():
     """Visual logo comparison UI"""
     st.markdown('<h1 class="main-header">🖼️ Visual Logo Comparison</h1>', unsafe_allow_html=True)
     
+    # Check if visual comparison is available
+    if not VISUAL_COMPARISON_AVAILABLE:
+        st.error("❌ Visual comparison is not available in this environment.")
+        st.info("This may be due to missing dependencies or cloud deployment limitations.")
+        st.markdown("""
+        ### 🔧 Troubleshooting:
+        - **OpenCV Issues**: The visual comparison requires OpenCV which may not be available in cloud environments
+        - **GPU Requirements**: Some AI models require GPU access which may not be available
+        - **Memory Limitations**: Cloud environments may have memory constraints
+        
+        ### 💡 Alternative:
+        You can still use the **Text-Based Extraction & Analysis** system which works in all environments.
+        """)
+        return
+    
     # Sidebar for navigation
     st.sidebar.title("📋 Navigation")
     page = st.sidebar.selectbox(
@@ -802,22 +840,41 @@ def show_main_interface():
             st.rerun()
     
     with col2:
-        st.markdown("""
-        <div class="system-card">
-            <h2>🖼️ Visual Logo Comparison</h2>
-            <div class="feature-list">
-                <p>✅ Computer vision logo matching</p>
-                <p>✅ Vision Transformer + EfficientNet</p>
-                <p>✅ OCR text extraction from logos</p>
-                <p>✅ High-resolution PDF processing</p>
-                <p>✅ Interactive similarity search</p>
+        if VISUAL_COMPARISON_AVAILABLE:
+            st.markdown("""
+            <div class="system-card">
+                <h2>🖼️ Visual Logo Comparison</h2>
+                <div class="feature-list">
+                    <p>✅ Computer vision logo matching</p>
+                    <p>✅ Vision Transformer + EfficientNet</p>
+                    <p>✅ OCR text extraction from logos</p>
+                    <p>✅ High-resolution PDF processing</p>
+                    <p>✅ Interactive similarity search</p>
+                </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="system-card" style="opacity: 0.6;">
+                <h2>🖼️ Visual Logo Comparison</h2>
+                <div class="feature-list">
+                    <p>❌ Computer vision logo matching</p>
+                    <p>❌ Vision Transformer + EfficientNet</p>
+                    <p>❌ OCR text extraction from logos</p>
+                    <p>❌ High-resolution PDF processing</p>
+                    <p>❌ Interactive similarity search</p>
+                    <p style="color: #ff6b6b; font-weight: bold;">⚠️ Not available in this environment</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         
-        if st.button("🎯 Launch Visual Analysis", key="visual_analysis", type="primary"):
-            st.session_state.current_system = "visual_comparison"
-            st.rerun()
+        if VISUAL_COMPARISON_AVAILABLE:
+            if st.button("🎯 Launch Visual Analysis", key="visual_analysis", type="primary"):
+                st.session_state.current_system = "visual_comparison"
+                st.rerun()
+        else:
+            if st.button("🎯 Launch Visual Analysis", key="visual_analysis", disabled=True):
+                pass
     
     # System information
     st.markdown("---")

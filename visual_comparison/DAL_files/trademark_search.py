@@ -10,9 +10,40 @@ import tempfile
 warnings.filterwarnings('ignore')
 
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend for cloud deployment
 import matplotlib.pyplot as plt
 from PIL import Image, ImageEnhance, ImageFilter
-import cv2
+
+# Try to import OpenCV with fallback for headless environments
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ OpenCV not available: {e}")
+    CV2_AVAILABLE = False
+    # Create a mock cv2 module for basic functionality
+    class MockCV2:
+        @staticmethod
+        def imread(path):
+            return None
+        @staticmethod
+        def cvtColor(img, code):
+            return img
+        @staticmethod
+        def findContours(img, mode, method):
+            return [], None
+        @staticmethod
+        def contourArea(contour):
+            return 0
+        @staticmethod
+        def boundingRect(contour):
+            return (0, 0, 100, 100)
+        RETR_EXTERNAL = 0
+        CHAIN_APPROX_SIMPLE = 0
+        COLOR_BGR2GRAY = 6
+    cv2 = MockCV2()
+
 from sklearn.metrics.pairwise import cosine_similarity
 
 import torch
@@ -127,29 +158,33 @@ class InteractiveTrademarkSearch:
         """Extract logo region and metadata"""
         try:
             # Load image
-            img_cv = cv2.imread(image_path)
-            if img_cv is None:
-                raise ValueError(f"Could not load image: {image_path}")
-                
-            gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-            
-            # Find main content region
-            contours, _ = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            logo_bbox = None
-            
-            if contours:
-                # Find the most significant contour
-                areas = [cv2.contourArea(c) for c in contours]
-                if areas:
-                    largest_idx = np.argmax(areas)
-                    largest_contour = contours[largest_idx]
-                    x, y, w, h = cv2.boundingRect(largest_contour)
+            if CV2_AVAILABLE:
+                img_cv = cv2.imread(image_path)
+                if img_cv is None:
+                    raise ValueError(f"Could not load image: {image_path}")
                     
-                    # Check if it's a reasonable logo region
-                    img_area = img_cv.shape[0] * img_cv.shape[1]
-                    contour_area = w * h
-                    if 0.02 < contour_area / img_area < 0.9:
-                        logo_bbox = (x, y, w, h)
+                gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+                
+                # Find main content region
+                contours, _ = cv2.findContours(gray, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                logo_bbox = None
+                
+                if contours:
+                    # Find the most significant contour
+                    areas = [cv2.contourArea(c) for c in contours]
+                    if areas:
+                        largest_idx = np.argmax(areas)
+                        largest_contour = contours[largest_idx]
+                        x, y, w, h = cv2.boundingRect(largest_contour)
+                        
+                        # Check if it's a reasonable logo region
+                        img_area = img_cv.shape[0] * img_cv.shape[1]
+                        contour_area = w * h
+                        if 0.02 < contour_area / img_area < 0.9:
+                            logo_bbox = (x, y, w, h)
+            else:
+                # Fallback when OpenCV is not available
+                logo_bbox = None
             
             # Extract text using OCR
             extracted_text = ""
