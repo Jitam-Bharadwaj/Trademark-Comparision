@@ -1,0 +1,49 @@
+# Trademark Analysis System Requirements
+# Combines both text extraction and visual comparison capabilities
+
+# Core FastAPI and web framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# LangChain and AI dependencies for text extraction
+langchain-groq
+langchain-core
+
+# PDF processing
+PyMuPDF
+pdf2image
+
+# Additional utilities
+python-dotenv
+requests
+
+# Image processing
+pillow
+numpy
+
+# Trademark comparison dependencies
+jellyfish
+fuzzywuzzy
+python-Levenshtein
+
+# Streamlit UI dependencies
+streamlit
+plotly
+pandas
+
+# Visual comparison AI models
+torch
+torchvision
+timm
+opencv-python
+matplotlib
+scikit-learn
+faiss-cpu
+easyocr
+sentence-transformers
+tqdm
+
+# Development dependencies (optional)
+pytest
+pytest-asyncio

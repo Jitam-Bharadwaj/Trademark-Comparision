@@ -1,0 +1,8 @@
+.env
+venv
+venv/
+__pycache__/
+viewJournal.pdf
+existing_trademarks.csv
+test_trademark_extraction.py
+test_comparison.py
