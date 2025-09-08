@@ -4,5 +4,6 @@ venv/
 __pycache__/
 viewJournal.pdf
 existing_trademarks.csv
+trademark_csv_template.csv
 test_trademark_extraction.py
 test_comparison.py
